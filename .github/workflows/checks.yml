@@ -1,0 +1,25 @@
+name: checks
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Show stack info
+        env:
+          STACK: ${{ toJSON(github.event.pull_request.stack) }}
+        run: echo "$STACK"
+      - name: Lowest unmerged layer only
+        if: github.event.pull_request.stack != null && github.event.pull_request.stack.base.ref == github.event.pull_request.base.ref
+        run: echo "I am the lowest unmerged layer"
+      - name: Top layer only
+        if: github.event.pull_request.stack != null && github.event.pull_request.stack.position == github.event.pull_request.stack.size
+        run: echo "I am the top layer"
+      - name: Wait on slow branches
+        if: endsWith(github.head_ref, 'slow')
+        run: sleep 180
+      - name: Fail when a file says BREAK
+        run: |
+          if grep -rn BREAK lab/; then exit 1; fi
